@@ -378,7 +378,7 @@ const LowStockAlerts = ({ stockData, onAddStock, userRole }) => {
 };
 
 // 📄 Stock Transactions Log Component
-const TransactionsLog = ({ transactions, userRole }) => {
+const TransactionsLog = ({ transactions, userRole, onExport }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   const totalPages = Math.ceil(transactions.length / itemsPerPage);
@@ -402,7 +402,11 @@ const TransactionsLog = ({ transactions, userRole }) => {
       <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
         <h2 className="text-xl font-semibold text-gray-800">📄 Stock Transactions Log</h2>
         {userRole === 'admin' && (
-          <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition-colors">
+          <button
+            onClick={onExport}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition-colors"
+            title="Export all visible stock transactions to CSV"
+          >
             📊 Export Log
           </button>
         )}
@@ -812,6 +816,38 @@ const StockPage = ({ userRole = 'admin', userName = 'Demo User' }) => {
     }
   };
 
+  // 📄 Export Transactions Log
+  const handleExportTransactionsLog = () => {
+    try {
+      if (transactions.length === 0) {
+        alert('No transactions available to export.');
+        return;
+      }
+
+      const exportData = transactions.map(t => ({
+        'Transaction ID': t.id,
+        'Product Name': t.productName,
+        'Type': t.type || t.transactionType || t.typeCode || '',
+        'Quantity': t.quantity,
+        'Date': t.date || t.createdAt || '',
+        'User': t.user || t.userName || 'N/A'
+      }));
+
+      const csvContent = generateCSVContent(exportData, 'Transactions Log');
+      const timestamp = new Date().toISOString().slice(0, 19).replace(/[T:]/g, '-');
+      const filename = `transactions-log-${timestamp}.csv`;
+
+      if (downloadFile(csvContent, filename)) {
+        alert(`✅ Transactions Log Exported!\n📄 File: ${filename}\n🧾 Records: ${exportData.length}`);
+      } else {
+        throw new Error('Download not supported');
+      }
+    } catch (error) {
+      console.error('Error exporting transactions log:', error);
+      alert('❌ Failed to export transactions log.');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 p-6">
       <div className="max-w-7xl mx-auto">
@@ -921,7 +957,7 @@ const StockPage = ({ userRole = 'admin', userName = 'Demo User' }) => {
             </div>
 
             {/* Transactions Log */}
-            <TransactionsLog transactions={transactions} userRole={userRole} />
+            <TransactionsLog transactions={transactions} userRole={userRole} onExport={handleExportTransactionsLog} />
 
             {/* Role Information */}
           
