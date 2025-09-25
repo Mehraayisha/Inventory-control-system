@@ -58,7 +58,7 @@ export default function AdminDashboard() {
       {/* Sidebar - Clean dark blue theme */}
       <aside className="w-64 bg-gray-800 text-white shadow-2xl flex flex-col">
         <div className="p-5 font-extrabold text-2xl border-b border-gray-700 text-blue-400">
-          Admin Panel
+          Staff Panel
         </div>
         <nav className="flex flex-col p-4 space-y-1 flex-1">
           {/* Active Dashboard Link */}
