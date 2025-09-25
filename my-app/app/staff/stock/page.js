@@ -1,13 +1,11 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { AddStockModal, ReduceStockModal, EditStockModal } from './modals.js';
 
-// 📦 Dashboard Overview Cards Component
-const DashboardOverview = ({ stockData }) => {
+// 📦 Dashboard Overview Cards Component (Staff View)
+const StaffDashboardOverview = ({ stockData }) => {
   const totalProducts = stockData.length;
   const totalStockQuantity = stockData.reduce((sum, item) => sum + item.currentStock, 0);
-  const totalStockValue = stockData.reduce((sum, item) => sum + (item.currentStock * item.unitPrice), 0);
   const lowStockCount = stockData.filter(item => item.currentStock < item.reorderLevel && item.currentStock > 0).length;
   const outOfStockCount = stockData.filter(item => item.currentStock === 0).length;
 
@@ -29,14 +27,6 @@ const DashboardOverview = ({ stockData }) => {
       borderColor: 'border-l-green-500'
     },
     {
-      title: 'Total Stock Value',
-      value: `$${totalStockValue.toLocaleString()}`,
-      icon: '💰',
-      color: 'purple',
-      bgColor: 'bg-purple-50',
-      borderColor: 'border-l-purple-500'
-    },
-    {
       title: 'Low Stock Items',
       value: lowStockCount,
       icon: '⚠️',
@@ -55,7 +45,7 @@ const DashboardOverview = ({ stockData }) => {
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-8">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
       {cards.map((card, index) => (
         <div key={index} className={`${card.bgColor} p-6 rounded-lg shadow-md border-l-4 ${card.borderColor}`}>
           <div className="flex items-center justify-between">
@@ -71,8 +61,8 @@ const DashboardOverview = ({ stockData }) => {
   );
 };
 
-// 🔍 Search and Filter Component
-const SearchAndFilter = ({ 
+// 🔍 Search and Filter Component (Staff View)
+const StaffSearchAndFilter = ({ 
   searchTerm, 
   setSearchTerm, 
   selectedCategory, 
@@ -84,7 +74,7 @@ const SearchAndFilter = ({
   return (
     <div className="bg-white p-6 rounded-lg shadow-md mb-6">
       <h3 className="text-lg font-semibold text-gray-800 mb-4">🔍 Search & Filter</h3>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Search Products</label>
           <input
@@ -123,20 +113,13 @@ const SearchAndFilter = ({
             <option value="Out of Stock">Out of Stock</option>
           </select>
         </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Quick Actions</label>
-          <button className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition-colors">
-            📊 View Reports
-          </button>
-        </div>
       </div>
     </div>
   );
 };
 
-// 📋 Stock Inventory Table Component
-const StockTable = ({ stockData, userRole, onAddStock, onReduceStock, onEditStock, onDeleteStock, sortConfig, setSortConfig }) => {
+// 📋 Staff Stock Inventory Table Component (Limited Actions)
+const StaffStockTable = ({ stockData, onDeleteStock, sortConfig, setSortConfig }) => {
   const getStatusColor = (status) => {
     switch (status) {
       case 'In Stock': return 'bg-green-100 text-green-800';
@@ -165,11 +148,29 @@ const StockTable = ({ stockData, userRole, onAddStock, onReduceStock, onEditStoc
     return sortConfig.direction === 'asc' ? '⬆️' : '⬇️';
   };
 
+  const handleViewDetails = (item) => {
+    alert(`📦 Product Details:
+
+🏷️ Product ID: ${item.productId}
+📝 Name: ${item.name}
+📋 Description: ${item.description || 'No description'}
+🏭 Category: ${item.category}
+💰 Unit Price: $${item.unitPrice}
+📦 Current Stock: ${item.currentStock} units
+⚠️ Reorder Level: ${item.reorderLevel} units
+📊 Status: ${item.status}
+📅 Last Updated: ${item.lastUpdated}
+
+ℹ️ As a staff member, you can view product details and delete products but cannot modify stock levels or product information.`);
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden">
-      <div className="px-6 py-4 border-b border-gray-200">
-        <h2 className="text-xl font-semibold text-gray-800">📋 Stock Inventory</h2>
-        <p className="text-sm text-gray-600 mt-1">Showing {stockData.length} products</p>
+      <div className="px-6 py-4 border-b border-gray-200 bg-orange-50">
+        <h2 className="text-xl font-semibold text-gray-800">📋 Stock Inventory (Staff View)</h2>
+        <p className="text-sm text-orange-600 mt-1">
+          👤 Staff Access: View details and delete products only | Showing {stockData.length} products
+        </p>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full">
@@ -187,7 +188,6 @@ const StockTable = ({ stockData, userRole, onAddStock, onReduceStock, onEditStoc
               >
                 Product Name {getSortIcon('name')}
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
               <th 
                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
@@ -201,9 +201,7 @@ const StockTable = ({ stockData, userRole, onAddStock, onReduceStock, onEditStoc
               >
                 Current Stock {getSortIcon('currentStock')}
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reorder Level</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Updated</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
@@ -219,7 +217,6 @@ const StockTable = ({ stockData, userRole, onAddStock, onReduceStock, onEditStoc
                     )}
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 max-w-xs truncate">{item.description}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   <span className="inline-flex px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
                     {item.category}
@@ -230,66 +227,28 @@ const StockTable = ({ stockData, userRole, onAddStock, onReduceStock, onEditStoc
                   <div className="text-sm font-bold text-gray-900">{item.currentStock}</div>
                   <div className="text-xs text-gray-500">units</div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.reorderLevel}</td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(item.status)}`}>
                     {item.status}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.lastUpdated}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <div className="flex space-x-2">
-                    {userRole === 'admin' ? (
-                      // Admin can do everything
-                      <>
-                        <button
-                          onClick={() => onAddStock(item)}
-                          className="text-green-600 hover:text-green-900 px-2 py-1 bg-green-100 hover:bg-green-200 rounded text-xs transition-colors"
-                          title="Add Stock"
-                        >
-                          ➕ Add
-                        </button>
-                        <button
-                          onClick={() => onReduceStock(item)}
-                          className="text-blue-600 hover:text-blue-900 px-2 py-1 bg-blue-100 hover:bg-blue-200 rounded text-xs transition-colors"
-                          title="Reduce Stock"
-                        >
-                          ➖ Reduce
-                        </button>
-                        <button
-                          onClick={() => onEditStock(item)}
-                          className="text-yellow-600 hover:text-yellow-900 px-2 py-1 bg-yellow-100 hover:bg-yellow-200 rounded text-xs transition-colors"
-                          title="Edit Product Info"
-                        >
-                          📝 Edit
-                        </button>
-                        <button
-                          onClick={() => onDeleteStock(item)}
-                          className="text-red-600 hover:text-red-900 px-2 py-1 bg-red-100 hover:bg-red-200 rounded text-xs transition-colors"
-                          title="Delete Product"
-                        >
-                          🗑️ Delete
-                        </button>
-                      </>
-                    ) : (
-                      // Staff can only delete and view details
-                      <>
-                        <button
-                          onClick={() => alert(`Product Details:\nName: ${item.name}\nStock: ${item.currentStock}\nPrice: $${item.unitPrice}\nCategory: ${item.category}`)}
-                          className="text-blue-600 hover:text-blue-900 px-2 py-1 bg-blue-100 hover:bg-blue-200 rounded text-xs transition-colors"
-                          title="View Product Details"
-                        >
-                          �️ View
-                        </button>
-                        <button
-                          onClick={() => onDeleteStock(item)}
-                          className="text-red-600 hover:text-red-900 px-2 py-1 bg-red-100 hover:bg-red-200 rounded text-xs transition-colors"
-                          title="Delete Product"
-                        >
-                          🗑️ Delete
-                        </button>
-                      </>
-                    )}
+                    {/* Staff can only view details and delete */}
+                    <button
+                      onClick={() => handleViewDetails(item)}
+                      className="text-blue-600 hover:text-blue-900 px-2 py-1 bg-blue-100 hover:bg-blue-200 rounded text-xs transition-colors"
+                      title="View Product Details"
+                    >
+                      👁️ View
+                    </button>
+                    <button
+                      onClick={() => onDeleteStock(item)}
+                      className="text-red-600 hover:text-red-900 px-2 py-1 bg-red-100 hover:bg-red-200 rounded text-xs transition-colors"
+                      title="Delete Product"
+                    >
+                      🗑️ Delete
+                    </button>
                   </div>
                 </td>
               </tr>
@@ -301,8 +260,8 @@ const StockTable = ({ stockData, userRole, onAddStock, onReduceStock, onEditStoc
   );
 };
 
-// ⚠️ Low Stock Alerts Component
-const LowStockAlerts = ({ stockData, onAddStock, userRole }) => {
+// ⚠️ Staff Low Stock Alerts Component (Read-only)
+const StaffLowStockAlerts = ({ stockData }) => {
   const lowStockItems = stockData.filter(item => item.currentStock < item.reorderLevel && item.currentStock > 0);
   const outOfStockItems = stockData.filter(item => item.currentStock === 0);
 
@@ -317,7 +276,12 @@ const LowStockAlerts = ({ stockData, onAddStock, userRole }) => {
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-      <h3 className="text-lg font-semibold text-gray-800 mb-4">⚠️ Stock Alerts</h3>
+      <h3 className="text-lg font-semibold text-gray-800 mb-4">⚠️ Stock Alerts (Read-Only View)</h3>
+      <div className="bg-orange-50 border border-orange-200 rounded-md p-3 mb-4">
+        <p className="text-orange-700 text-sm">
+          ℹ️ <strong>Staff Note:</strong> You can view stock alerts but cannot add stock. Contact an administrator to restock items.
+        </p>
+      </div>
       
       {outOfStockItems.length > 0 && (
         <div className="mb-4">
@@ -329,14 +293,7 @@ const LowStockAlerts = ({ stockData, onAddStock, userRole }) => {
                   <span className="font-medium text-red-800">{item.name}</span>
                   <span className="text-red-600 text-sm ml-2">({item.productId})</span>
                 </div>
-                {userRole === 'admin' && (
-                  <button
-                    onClick={() => onAddStock(item)}
-                    className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm transition-colors"
-                  >
-                    ➕ Add Stock
-                  </button>
-                )}
+                <span className="text-red-600 text-sm font-medium">Contact Admin to Restock</span>
               </div>
             ))}
           </div>
@@ -355,14 +312,7 @@ const LowStockAlerts = ({ stockData, onAddStock, userRole }) => {
                     ({item.currentStock}/{item.reorderLevel})
                   </span>
                 </div>
-                {userRole === 'admin' && (
-                  <button
-                    onClick={() => onAddStock(item)}
-                    className="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded text-sm transition-colors"
-                  >
-                    ➕ Add Stock
-                  </button>
-                )}
+                <span className="text-yellow-600 text-sm font-medium">Admin Action Required</span>
               </div>
             ))}
           </div>
@@ -372,8 +322,8 @@ const LowStockAlerts = ({ stockData, onAddStock, userRole }) => {
   );
 };
 
-// 📄 Stock Transactions Log Component
-const TransactionsLog = ({ transactions, userRole }) => {
+// 📄 Staff Transactions Log Component (Read-only)
+const StaffTransactionsLog = ({ transactions }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   const totalPages = Math.ceil(transactions.length / itemsPerPage);
@@ -394,13 +344,9 @@ const TransactionsLog = ({ transactions, userRole }) => {
 
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden">
-      <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-        <h2 className="text-xl font-semibold text-gray-800">📄 Stock Transactions Log</h2>
-        {userRole === 'admin' && (
-          <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition-colors">
-            📊 Export Log
-          </button>
-        )}
+      <div className="px-6 py-4 border-b border-gray-200 bg-blue-50">
+        <h2 className="text-xl font-semibold text-gray-800">📄 Stock Transactions Log (Read-Only)</h2>
+        <p className="text-sm text-blue-600 mt-1">👤 Staff View: Transaction history for reference only</p>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full">
@@ -462,22 +408,16 @@ const TransactionsLog = ({ transactions, userRole }) => {
   );
 };
 
-// 📦 Main Stock Page Component
-const StockPage = ({ userRole = 'admin', userName = 'Demo User' }) => {
+// 📦 Staff Stock Page Component (Limited Permissions)
+const StaffStockPage = ({ userName = 'Staff User' }) => {
   const [stockData, setStockData] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
-  const [selectedSupplier, setSelectedSupplier] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
   const [isLoading, setIsLoading] = useState(true);
   const [categories, setCategoriesData] = useState([]);
-  
-  // Modal states
-  const [addStockModal, setAddStockModal] = useState({ isOpen: false, product: null });
-  const [reduceStockModal, setReduceStockModal] = useState({ isOpen: false, product: null });
-  const [editStockModal, setEditStockModal] = useState({ isOpen: false, product: null });
 
   // 🔄 Load stock data from API
   const loadStockData = async () => {
@@ -487,7 +427,7 @@ const StockPage = ({ userRole = 'admin', userName = 'Demo User' }) => {
       if (response.ok) {
         const data = await response.json();
         setStockData(data);
-        console.log('✅ Stock data loaded from database:', data.length, 'products');
+        console.log('✅ Stock data loaded from database (Staff View):', data.length, 'products');
       } else {
         console.error('Failed to fetch stock data - Response not OK');
         setStockData([]);
@@ -507,7 +447,7 @@ const StockPage = ({ userRole = 'admin', userName = 'Demo User' }) => {
       if (response.ok) {
         const data = await response.json();
         setTransactions(data);
-        console.log('✅ Transaction data loaded from database:', data.length, 'transactions');
+        console.log('✅ Transaction data loaded from database (Staff View):', data.length, 'transactions');
       } else {
         console.error('Failed to fetch transaction data - Response not OK');
         setTransactions([]);
@@ -540,25 +480,15 @@ const StockPage = ({ userRole = 'admin', userName = 'Demo User' }) => {
     loadCategoriesData();
   }, []);
 
-  // Get unique categories and suppliers from stockData
-  const uniqueCategories = useMemo(() => {
-    return Array.from(new Set(stockData.map(item => item.category)));
-  }, [stockData]);
-
-  const suppliers = useMemo(() => {
-    return Array.from(new Set(stockData.map(item => item.supplier).filter(Boolean)));
-  }, [stockData]);
-
   // Filter and sort stock data
   const filteredAndSortedStockData = useMemo(() => {
     let filtered = stockData.filter(item => {
       const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            item.productId.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesCategory = selectedCategory === '' || item.category === selectedCategory;
-      const matchesSupplier = selectedSupplier === '' || item.supplier === selectedSupplier;
       const matchesStatus = selectedStatus === '' || item.status === selectedStatus;
       
-      return matchesSearch && matchesCategory && matchesSupplier && matchesStatus;
+      return matchesSearch && matchesCategory && matchesStatus;
     });
 
     // Sort the filtered data
@@ -575,117 +505,14 @@ const StockPage = ({ userRole = 'admin', userName = 'Demo User' }) => {
     }
 
     return filtered;
-  }, [stockData, searchTerm, selectedCategory, selectedSupplier, selectedStatus, sortConfig]);
+  }, [stockData, searchTerm, selectedCategory, selectedStatus, sortConfig]);
 
-  // Stock action handlers
-  const handleAddStock = (item) => {
-    setAddStockModal({ isOpen: true, product: item });
-  };
-
-  const handleReduceStock = (item) => {
-    setReduceStockModal({ isOpen: true, product: item });
-  };
-
-  const handleEditStock = (item) => {
-    setEditStockModal({ isOpen: true, product: item });
-  };
-
+  // Staff can only delete products (with confirmation)
   const handleDeleteStock = (item) => {
-    if (confirm(`Are you sure you want to delete ${item.name}?`)) {
+    if (confirm(`⚠️ Are you sure you want to delete "${item.name}"?\n\nThis action cannot be undone. As a staff member, you have delete permissions but cannot add or modify stock levels.`)) {
+      // TODO: Implement delete API call
       setStockData(prev => prev.filter(stock => stock.id !== item.id));
-    }
-  };
-
-  const handleExportReport = () => {
-    alert('Exporting stock report...');
-    // Implement export functionality
-  };
-
-  // Modal submit handlers
-  const handleAddStockSubmit = async (data) => {
-    try {
-      const transactionData = {
-        productId: data.productId,
-        transactionType: 'IN',
-        quantity: data.quantity,
-        notes: data.reason || data.supplier,
-        userId: 1 // This should come from actual user session
-      };
-
-      const response = await fetch('/api/transactions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(transactionData),
-      });
-
-      if (response.ok) {
-        // Reload data to get fresh stock counts
-        await loadStockData();
-        await loadTransactionData();
-      } else {
-        console.error('Failed to add stock');
-        alert('Failed to add stock. Please try again.');
-      }
-    } catch (error) {
-      console.error('Error adding stock:', error);
-      alert('Error adding stock. Please try again.');
-    }
-  };
-
-  const handleReduceStockSubmit = async (data) => {
-    try {
-      const transactionData = {
-        productId: data.productId,
-        transactionType: 'OUT',
-        quantity: data.quantity,
-        notes: data.reason,
-        userId: 1 // This should come from actual user session
-      };
-
-      const response = await fetch('/api/transactions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(transactionData),
-      });
-
-      if (response.ok) {
-        // Reload data to get fresh stock counts
-        await loadStockData();
-        await loadTransactionData();
-      } else {
-        console.error('Failed to reduce stock');
-        alert('Failed to reduce stock. Please try again.');
-      }
-    } catch (error) {
-      console.error('Error reducing stock:', error);
-      alert('Error reducing stock. Please try again.');
-    }
-  };
-
-  const handleEditStockSubmit = async (data) => {
-    try {
-      const response = await fetch('/api/stock', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
-
-      if (response.ok) {
-        // Reload data to get fresh information
-        await loadStockData();
-      } else {
-        console.error('Failed to update product');
-        alert('Failed to update product. Please try again.');
-      }
-    } catch (error) {
-      console.error('Error updating product:', error);
-      alert('Error updating product. Please try again.');
+      alert(`✅ Product "${item.name}" has been deleted successfully.`);
     }
   };
 
@@ -696,36 +523,36 @@ const StockPage = ({ userRole = 'admin', userName = 'Demo User' }) => {
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">📦 Stock Management System</h1>
-            <p className="text-gray-600">Welcome, {userName} ({userRole})</p>
+            <p className="text-gray-600">Welcome, {userName} 
+              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800 ml-2">
+                👤 Staff Access
+              </span>
+            </p>
           </div>
-          {userRole === 'admin' && (
-            <div className="flex space-x-4">
-              <button
-                onClick={handleExportReport}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-              >
-                📊 Export Report
-              </button>
+          <div className="text-right">
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+              <p className="text-orange-700 text-sm font-medium">🔒 Limited Access Mode</p>
+              <p className="text-orange-600 text-xs">View & Delete Only</p>
             </div>
-          )}
+          </div>
         </div>
 
         {/* Loading State */}
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
             <span className="ml-3 text-lg text-gray-600">Loading stock data...</span>
           </div>
         ) : (
           <>
             {/* Dashboard Overview */}
-            <DashboardOverview stockData={stockData} />
+            <StaffDashboardOverview stockData={stockData} />
 
-            {/* Low Stock Alerts */}
-            <LowStockAlerts stockData={stockData} onAddStock={handleAddStock} userRole={userRole} />
+            {/* Low Stock Alerts (Read-only) */}
+            <StaffLowStockAlerts stockData={stockData} />
 
             {/* Search and Filter */}
-            <SearchAndFilter
+            <StaffSearchAndFilter
               searchTerm={searchTerm}
               setSearchTerm={setSearchTerm}
               selectedCategory={selectedCategory}
@@ -737,12 +564,8 @@ const StockPage = ({ userRole = 'admin', userName = 'Demo User' }) => {
 
             {/* Stock Table */}
             <div className="mb-8">
-              <StockTable
+              <StaffStockTable
                 stockData={filteredAndSortedStockData}
-                userRole={userRole}
-                onAddStock={handleAddStock}
-                onReduceStock={handleReduceStock}
-                onEditStock={handleEditStock}
                 onDeleteStock={handleDeleteStock}
                 sortConfig={sortConfig}
                 setSortConfig={setSortConfig}
@@ -750,39 +573,14 @@ const StockPage = ({ userRole = 'admin', userName = 'Demo User' }) => {
             </div>
 
             {/* Transactions Log */}
-            <TransactionsLog transactions={transactions} userRole={userRole} />
+            <StaffTransactionsLog transactions={transactions} />
 
-            {/* Role Information */}
-          
+           
           </>
-        )}
-
-        {/* Modals */}
-        <AddStockModal
-          isOpen={addStockModal.isOpen}
-          onClose={() => setAddStockModal({ isOpen: false, product: null })}
-          product={addStockModal.product}
-          onSubmit={handleAddStockSubmit}
-        />
-
-        <ReduceStockModal
-          isOpen={reduceStockModal.isOpen}
-          onClose={() => setReduceStockModal({ isOpen: false, product: null })}
-          product={reduceStockModal.product}
-          onSubmit={handleReduceStockSubmit}
-        />
-
-        {userRole === 'admin' && (
-          <EditStockModal
-            isOpen={editStockModal.isOpen}
-            onClose={() => setEditStockModal({ isOpen: false, product: null })}
-            product={editStockModal.product}
-            onSubmit={handleEditStockSubmit}
-          />
         )}
       </div>
     </div>
   );
 };
 
-export default StockPage;
+export default StaffStockPage;
