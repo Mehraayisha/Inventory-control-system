@@ -82,7 +82,8 @@ const StaffSearchAndFilter = ({
             placeholder="Search by name or ID..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+             text-gray-900 placeholder-gray-600"
           />
         </div>
         
@@ -91,11 +92,11 @@ const StaffSearchAndFilter = ({
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500  text-gray-900 placeholder-gray-600"
           >
             <option value="">All Categories</option>
             {categories.map(category => (
-              <option key={category.id} value={category.name}>{category.name}</option>
+              <option key={category.category_id} value={category.category_name}>{category.category_name}</option>
             ))}
           </select>
         </div>
@@ -105,7 +106,7 @@ const StaffSearchAndFilter = ({
           <select
             value={selectedStatus}
             onChange={(e) => setSelectedStatus(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500  text-gray-900 placeholder-gray-600"
           >
             <option value="">All Status</option>
             <option value="In Stock">In Stock</option>

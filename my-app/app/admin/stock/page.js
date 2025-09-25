@@ -30,7 +30,7 @@ const DashboardOverview = ({ stockData }) => {
     },
     {
       title: 'Total Stock Value',
-      value: `$${totalStockValue.toLocaleString()}`,
+      value: `${totalStockValue.toLocaleString()}`,
       icon: '💰',
       color: 'purple',
       bgColor: 'bg-purple-50',
@@ -92,7 +92,9 @@ const SearchAndFilter = ({
             placeholder="Search by name or ID..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md 
+             focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+             text-gray-900 placeholder-gray-600"
           />
         </div>
         
@@ -101,11 +103,12 @@ const SearchAndFilter = ({
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+             text-gray-900 placeholder-gray-600"
           >
             <option value="">All Categories</option>
             {categories.map(category => (
-              <option key={category.id} value={category.name}>{category.name}</option>
+              <option key={category.category_id} value={category.category_name}>{category.category_name}</option>
             ))}
           </select>
         </div>
@@ -115,7 +118,8 @@ const SearchAndFilter = ({
           <select
             value={selectedStatus}
             onChange={(e) => setSelectedStatus(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+             text-gray-900 placeholder-gray-600"
           >
             <option value="">All Status</option>
             <option value="In Stock">In Stock</option>
@@ -373,7 +377,7 @@ const LowStockAlerts = ({ stockData, onAddStock, userRole }) => {
 };
 
 // 📄 Stock Transactions Log Component
-const TransactionsLog = ({ transactions, userRole }) => {
+const TransactionsLog = ({ transactions, userRole, onExportTransactions }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   const totalPages = Math.ceil(transactions.length / itemsPerPage);
@@ -397,7 +401,10 @@ const TransactionsLog = ({ transactions, userRole }) => {
       <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
         <h2 className="text-xl font-semibold text-gray-800">📄 Stock Transactions Log</h2>
         {userRole === 'admin' && (
-          <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition-colors">
+          <button 
+            onClick={onExportTransactions}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition-colors"
+          >
             📊 Export Log
           </button>
         )}
@@ -468,7 +475,6 @@ const StockPage = ({ userRole = 'admin', userName = 'Demo User' }) => {
   const [transactions, setTransactions] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
-  const [selectedSupplier, setSelectedSupplier] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
   const [isLoading, setIsLoading] = useState(true);
@@ -540,13 +546,9 @@ const StockPage = ({ userRole = 'admin', userName = 'Demo User' }) => {
     loadCategoriesData();
   }, []);
 
-  // Get unique categories and suppliers from stockData
+  // Get unique categories from stockData
   const uniqueCategories = useMemo(() => {
-    return Array.from(new Set(stockData.map(item => item.category)));
-  }, [stockData]);
-
-  const suppliers = useMemo(() => {
-    return Array.from(new Set(stockData.map(item => item.supplier).filter(Boolean)));
+    return Array.from(new Set(stockData.map(item => item.category).filter(Boolean)));
   }, [stockData]);
 
   // Filter and sort stock data
@@ -555,10 +557,9 @@ const StockPage = ({ userRole = 'admin', userName = 'Demo User' }) => {
       const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            item.productId.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesCategory = selectedCategory === '' || item.category === selectedCategory;
-      const matchesSupplier = selectedSupplier === '' || item.supplier === selectedSupplier;
       const matchesStatus = selectedStatus === '' || item.status === selectedStatus;
       
-      return matchesSearch && matchesCategory && matchesSupplier && matchesStatus;
+      return matchesSearch && matchesCategory && matchesStatus;
     });
 
     // Sort the filtered data
@@ -575,7 +576,7 @@ const StockPage = ({ userRole = 'admin', userName = 'Demo User' }) => {
     }
 
     return filtered;
-  }, [stockData, searchTerm, selectedCategory, selectedSupplier, selectedStatus, sortConfig]);
+  }, [stockData, searchTerm, selectedCategory, selectedStatus, sortConfig]);
 
   // Stock action handlers
   const handleAddStock = (item) => {
@@ -663,7 +664,6 @@ const StockPage = ({ userRole = 'admin', userName = 'Demo User' }) => {
                        item.currentStock < item.reorderLevel ? 'Low Stock' : 'In Stock',
         'Stock Health': item.currentStock === 0 ? 'Critical' :
                        item.currentStock < item.reorderLevel ? 'Warning' : 'Good',
-        'Supplier': item.supplier || 'N/A',
         'Location': item.location || 'N/A',
         'Last Updated': new Date(item.lastUpdated || Date.now()).toLocaleDateString(),
         'Days Since Update': Math.floor((Date.now() - new Date(item.lastUpdated || Date.now()).getTime()) / (1000 * 60 * 60 * 24))
@@ -672,7 +672,7 @@ const StockPage = ({ userRole = 'admin', userName = 'Demo User' }) => {
       // Add summary data at the beginning
       const summaryData = [
         { 'Metric': 'Total Products', 'Value': totalProducts },
-        { 'Metric': 'Total Stock Value', 'Value': `$${totalValue.toFixed(2)}` },
+        { 'Metric': 'Total Stock Value', 'Value': `${totalValue.toFixed(2)}` },
         { 'Metric': 'Low Stock Items', 'Value': lowStockItems },
         { 'Metric': 'Out of Stock Items', 'Value': outOfStockItems },
         { 'Metric': 'Stock Health Score', 'Value': `${Math.round((totalProducts - outOfStockItems - lowStockItems) / totalProducts * 100)}%` }
@@ -699,7 +699,7 @@ const StockPage = ({ userRole = 'admin', userName = 'Demo User' }) => {
           '✅ Stock Report Exported Successfully!',
           `📄 File: ${filename}`,
           `📊 Records: ${exportData.length} products`,
-          `💰 Total Value: $${totalValue.toFixed(2)}`,
+          `💰 Total Value: ${totalValue.toFixed(2)}`,
           `⚠️  Alerts: ${lowStockItems} low stock, ${outOfStockItems} out of stock`,
           '',
           'The report includes:',
@@ -719,6 +719,57 @@ const StockPage = ({ userRole = 'admin', userName = 'Demo User' }) => {
     }
   };
 
+  // Export transactions log function
+  const handleExportTransactionsLog = () => {
+    try {
+      if (transactions.length === 0) {
+        alert('📄 No transactions to export!\n\nThe transactions log is empty.');
+        return;
+      }
+
+      // Prepare transaction data for export
+      const exportData = transactions.map(transaction => ({
+        'Transaction ID': transaction.transaction_id || transaction.id,
+        'Product Name': transaction.product_name || 'Unknown Product',
+        'Type': transaction.transaction_type === 'IN' ? 'Stock In' : 'Stock Out',
+        'Quantity': transaction.quantity,
+        'Date': transaction.transaction_date ? new Date(transaction.transaction_date).toLocaleDateString() : 'N/A',
+        'Time': transaction.transaction_date ? new Date(transaction.transaction_date).toLocaleTimeString() : 'N/A',
+        'User': transaction.user_name || 'System',
+        'Notes': transaction.notes || 'N/A',
+        'Value Impact': transaction.transaction_type === 'IN' ? `+${transaction.quantity}` : `-${transaction.quantity}`
+      }));
+
+      // Generate CSV content
+      const csvContent = generateCSVContent(exportData, 'Transactions Log');
+      const timestamp = new Date().toISOString().slice(0, 19).replace(/[T:]/g, '-');
+      const filename = `transactions-log-${timestamp}.csv`;
+
+      // Download file
+      if (downloadFile(csvContent, filename)) {
+        const stockInCount = transactions.filter(t => t.transaction_type === 'IN').length;
+        const stockOutCount = transactions.filter(t => t.transaction_type === 'OUT').length;
+        
+        const message = [
+          '✅ Transactions Log Exported Successfully!',
+          `📄 File: ${filename}`,
+          `📊 Total Transactions: ${transactions.length}`,
+          `📦 Stock In: ${stockInCount} transactions`,
+          `📤 Stock Out: ${stockOutCount} transactions`,
+          '',
+          'The log includes all stock movement history with timestamps and user details.'
+        ].join('\n');
+        
+        alert(message);
+      } else {
+        throw new Error('Download not supported in this browser');
+      }
+    } catch (error) {
+      console.error('Export transactions error:', error);
+      alert('❌ Failed to export transactions log. Please try again.\n\nError: ' + error.message);
+    }
+  };
+
   // Modal submit handlers
   const handleAddStockSubmit = async (data) => {
     try {
@@ -726,7 +777,7 @@ const StockPage = ({ userRole = 'admin', userName = 'Demo User' }) => {
         productId: data.productId,
         transactionType: 'IN',
         quantity: data.quantity,
-        notes: data.reason || data.supplier,
+        notes: data.reason || 'Stock added',
         userId: 1 // This should come from actual user session
       };
 
@@ -851,8 +902,7 @@ const StockPage = ({ userRole = 'admin', userName = 'Demo User' }) => {
                     'Unit Price': item.unitPrice.toFixed(2),
                     'Reorder Cost': ((item.reorderLevel - item.currentStock) * item.unitPrice).toFixed(2),
                     'Status': item.currentStock === 0 ? 'OUT OF STOCK' : 'LOW STOCK',
-                    'Priority': item.currentStock === 0 ? 'URGENT' : 'HIGH',
-                    'Supplier': item.supplier || 'N/A'
+                    'Priority': item.currentStock === 0 ? 'URGENT' : 'HIGH'
                   }));
 
                   const csvContent = generateCSVContent(exportData, 'Low Stock Alert');
@@ -916,7 +966,11 @@ const StockPage = ({ userRole = 'admin', userName = 'Demo User' }) => {
             </div>
 
             {/* Transactions Log */}
-            <TransactionsLog transactions={transactions} userRole={userRole} />
+            <TransactionsLog 
+              transactions={transactions} 
+              userRole={userRole} 
+              onExportTransactions={handleExportTransactionsLog}
+            />
 
             {/* Role Information */}
           
