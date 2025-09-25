@@ -36,7 +36,7 @@ const OrdersOverview = ({ orders }) => {
     },
     {
       title: 'Total Value',
-      value: `${totalValue.toFixed(2)}`,
+      value: `₹${totalValue.toFixed(2)}`,
       icon: '💰',
       color: 'purple',
       bgColor: 'bg-purple-50',
@@ -82,7 +82,7 @@ const SearchAndFilter = ({
             placeholder="Search by order ID, supplier..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500  text-gray-900 placeholder-gray-600"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-600"
           />
         </div>
         
@@ -91,7 +91,7 @@ const SearchAndFilter = ({
           <select
             value={selectedStatus}
             onChange={(e) => setSelectedStatus(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500  text-gray-900 placeholder-gray-600"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-600"
           >
             <option value="">All Status</option>
             <option value="PENDING">Pending</option>
@@ -105,7 +105,7 @@ const SearchAndFilter = ({
           <select
             value={selectedSupplier}
             onChange={(e) => setSelectedSupplier(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500  text-gray-900 placeholder-gray-600"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-600"
           >
             <option value="">All Suppliers</option>
             {suppliers.map(supplier => (
@@ -120,7 +120,169 @@ const SearchAndFilter = ({
   );
 };
 
-// 📋 Orders Table Component
+// 📝 Create Order Modal Component
+const CreateOrderModal = ({ isOpen, onClose, onOrderCreated, suppliers, products }) => {
+  const [formData, setFormData] = useState({
+    product_id: '',
+    supplier_id: '',
+    quantity_ordered: ''
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setError('');
+
+    try {
+      const response = await fetch('/api/orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          product_id: parseInt(formData.product_id),
+          supplier_id: parseInt(formData.supplier_id),
+          quantity_ordered: parseInt(formData.quantity_ordered)
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        // Success! Reset form and close modal
+        setFormData({ product_id: '', supplier_id: '', quantity_ordered: '' });
+        onClose();
+        onOrderCreated(); // Refresh orders list
+        alert('✅ Order created successfully!');
+      } else {
+        setError(result.error || 'Failed to create order');
+      }
+    } catch (error) {
+      console.error('Error creating order:', error);
+      setError('Network error. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  if (!isOpen) return null;
+
+  // Debug: Log products data to see the structure
+  console.log('Products data in modal:', products);
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold text-gray-800">📝 Create New Order</h2>
+          <button
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700"
+          >
+            ✕
+          </button>
+        </div>
+
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit}>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Product
+            </label>
+            <select
+              name="product_id"
+              value={formData.product_id}
+              onChange={handleChange}
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+            >
+              <option value="">Select Product</option>
+              {products.map(product => (
+                <option key={product.product_id || product.id} value={product.product_id || product.id}>
+                  {/* Try different possible field names for product name and price */}
+                  {product.name || product.product_name || product.title || `Product ${product.product_id || product.id}`} 
+                  {product.price && ` - ₹${product.price}`}
+                  {product.unit_price && ` - ₹${product.unit_price}`}
+                  {product.stock_quantity && ` (Stock: ${product.stock_quantity})`}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Supplier
+            </label>
+            <select
+              name="supplier_id"
+              value={formData.supplier_id}
+              onChange={handleChange}
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+            >
+              <option value="">Select Supplier</option>
+              {suppliers.map(supplier => (
+                <option key={supplier.supplier_id || supplier.id} value={supplier.supplier_id || supplier.id}>
+                  {/* Try different possible field names for supplier name */}
+                  {supplier.name || supplier.supplier_name || supplier.company_name || `Supplier ${supplier.supplier_id || supplier.id}`}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Quantity
+            </label>
+            <input
+              type="number"
+              name="quantity_ordered"
+              value={formData.quantity_ordered}
+              onChange={handleChange}
+              min="1"
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+              placeholder="Enter quantity"
+            />
+          </div>
+
+          <div className="flex justify-end space-x-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-gray-600 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
+            >
+              {isSubmitting ? '⏳ Creating...' : '✅ Create Order'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// 📋 Orders Table Component (View button removed)
 const OrdersTable = ({ orders }) => {
   const getStatusColor = (status) => {
     switch (status) {
@@ -149,7 +311,6 @@ const OrdersTable = ({ orders }) => {
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Amount</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order Date</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -159,21 +320,13 @@ const OrdersTable = ({ orders }) => {
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{order.supplier_name}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{order.product_name}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{order.quantity_ordered}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">${order.unit_price}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">${order.total_amount}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">₹{order.unit_price}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">₹{order.total_amount}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{order.order_date}</td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(order.status)}`}>
                     {order.status}
                   </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button
-                    className="text-blue-600 hover:text-blue-900 px-2 py-1 bg-blue-100 hover:bg-blue-200 rounded text-xs transition-colors"
-                    title="View Order Details"
-                  >
-                    👁️ View
-                  </button>
                 </td>
               </tr>
             ))}
@@ -188,10 +341,12 @@ const OrdersTable = ({ orders }) => {
 const AdminOrdersPage = () => {
   const [orders, setOrders] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
+  const [products, setProducts] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
   const [selectedSupplier, setSelectedSupplier] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   // Load orders data from API
   const loadOrdersData = async () => {
@@ -230,11 +385,33 @@ const AdminOrdersPage = () => {
     }
   };
 
+  // Load products data from API
+  const loadProductsData = async () => {
+    try {
+      const response = await fetch('/api/products');
+      if (response.ok) {
+        const data = await response.json();
+        setProducts(data);
+        console.log('✅ Products data loaded:', data.length, 'products');
+      } else {
+        console.error('Failed to fetch products data');
+      }
+    } catch (error) {
+      console.error('Error fetching products data:', error);
+    }
+  };
+
   // Load data on component mount
   useEffect(() => {
     loadOrdersData();
     loadSuppliersData();
+    loadProductsData();
   }, []);
+
+  // Handle order creation success
+  const handleOrderCreated = () => {
+    loadOrdersData(); // Refresh orders list
+  };
 
   // Filter orders based on search and filters
   const filteredOrders = useMemo(() => {
@@ -258,7 +435,10 @@ const AdminOrdersPage = () => {
             <h1 className="text-3xl font-bold text-gray-900">🛒 Orders Management</h1>
             <p className="text-gray-600">Manage purchase orders and supplier orders</p>
           </div>
-          <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">
+          <button 
+            onClick={() => setShowCreateModal(true)}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+          >
             ➕ Create New Order
           </button>
         </div>
@@ -288,6 +468,15 @@ const AdminOrdersPage = () => {
             <OrdersTable orders={filteredOrders} />
           </>
         )}
+
+        {/* Create Order Modal */}
+        <CreateOrderModal
+          isOpen={showCreateModal}
+          onClose={() => setShowCreateModal(false)}
+          onOrderCreated={handleOrderCreated}
+          suppliers={suppliers}
+          products={products}
+        />
       </div>
     </div>
   );

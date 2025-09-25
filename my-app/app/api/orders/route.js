@@ -65,42 +65,104 @@ export async function GET() {
 
 export async function POST(request) {
   try {
+    console.log('🔄 POST request received for order creation');
+    
     const orderData = await request.json();
+    console.log('📥 Received order data:', orderData);
+    
     const { product_id, supplier_id, quantity_ordered } = orderData;
 
-    console.log('📝 Creating new order in database:', { product_id, supplier_id, quantity_ordered });
+    console.log('📝 Creating new order in database:', { 
+      product_id, 
+      supplier_id, 
+      quantity_ordered,
+      types: {
+        product_id: typeof product_id,
+        supplier_id: typeof supplier_id,
+        quantity_ordered: typeof quantity_ordered
+      }
+    });
 
     // Validate required fields
     if (!product_id || !supplier_id || !quantity_ordered) {
+      console.log('❌ Missing required fields');
       return NextResponse.json(
-        { error: 'product_id, supplier_id, and quantity_ordered are required' },
+        { 
+          error: 'product_id, supplier_id, and quantity_ordered are required',
+          received: { product_id, supplier_id, quantity_ordered }
+        },
         { status: 400 }
+      );
+    }
+
+    // Validate that product and supplier exist
+    try {
+      console.log('🔍 Checking if product exists...');
+      const productCheck = await query('SELECT product_id FROM Products WHERE product_id = $1', [product_id]);
+      if (!productCheck.rows || productCheck.rows.length === 0) {
+        return NextResponse.json(
+          { error: `Product with ID ${product_id} does not exist` },
+          { status: 400 }
+        );
+      }
+
+      console.log('🔍 Checking if supplier exists...');
+      const supplierCheck = await query('SELECT supplier_id FROM Suppliers WHERE supplier_id = $1', [supplier_id]);
+      if (!supplierCheck.rows || supplierCheck.rows.length === 0) {
+        return NextResponse.json(
+          { error: `Supplier with ID ${supplier_id} does not exist` },
+          { status: 400 }
+        );
+      }
+    } catch (checkError) {
+      console.error('❌ Error checking product/supplier existence:', checkError);
+      return NextResponse.json(
+        { error: 'Failed to validate product/supplier', details: checkError.message },
+        { status: 500 }
       );
     }
 
     // Insert the order (matching your schema)
     const orderInsertQuery = `
-      INSERT INTO Orders (product_id, supplier_id, quantity_ordered)
-      VALUES ($1, $2, $3)
-      RETURNING order_id, order_date
+      INSERT INTO Orders (product_id, supplier_id, quantity_ordered, order_date)
+      VALUES ($1, $2, $3, NOW())
+      RETURNING order_id, order_date, product_id, supplier_id, quantity_ordered
     `;
 
+    console.log('💾 Executing insert query with values:', [product_id, supplier_id, quantity_ordered]);
+
     const result = await query(orderInsertQuery, [
-      product_id,
-      supplier_id,
-      quantity_ordered
+      parseInt(product_id),
+      parseInt(supplier_id),
+      parseInt(quantity_ordered)
     ]);
 
-    console.log('✅ Order created successfully:', result.rows[0].order_id);
+    console.log('📊 Insert result:', result);
+
+    if (!result.rows || result.rows.length === 0) {
+      console.error('❌ No rows returned from insert');
+      return NextResponse.json(
+        { error: 'Failed to create order - no data returned' },
+        { status: 500 }
+      );
+    }
+
+    console.log('✅ Order created successfully:', result.rows[0]);
     return NextResponse.json({
+      success: true,
       message: 'Order created successfully',
       order: result.rows[0]
     }, { status: 201 });
 
   } catch (error) {
     console.error('❌ Database error creating order:', error);
+    console.error('❌ Error stack:', error.stack);
     return NextResponse.json(
-      { error: 'Failed to create order', details: error.message },
+      { 
+        error: 'Failed to create order', 
+        details: error.message,
+        code: error.code || 'UNKNOWN'
+      },
       { status: 500 }
     );
   }
