@@ -110,16 +110,16 @@ export default function CategoriesPage() {
 
   // Delete category
   async function handleDelete(id) {
-    if (!confirm("Are you sure you want to delete this category?")) return;
-    try {
-      const res = await fetch(`/api/categories/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Failed to delete category");
-      fetchCategories();
-      alert("Category deleted successfully!");
-    } catch (err) {
-      alert(err.message);
-    }
+  if (!confirm("Are you sure you want to delete this category?")) return;
+  try {
+    const res = await fetch(`/api/categories/${id}`, { method: "DELETE" });
+    if (!res.ok) throw new Error("Failed to delete category");
+    fetchCategories();
+    alert("Category deleted successfully!");
+  } catch (err) {
+    alert(err.message);
   }
+}
 
   if (loading) return <p className="text-gray-600 mt-6">Loading categories...</p>;
   if (error) return <p className="text-red-500 mt-6">{error}</p>;

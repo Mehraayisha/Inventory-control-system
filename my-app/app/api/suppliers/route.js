@@ -8,19 +8,12 @@ export async function GET() {
     const suppliersQuery = `
       SELECT 
         supplier_id,
-        supplier_name,
-        contact_person,
+        name as supplier_name,
         contact_email,
-        phone,
-        address,
-        city,
-        state,
-        zip_code,
-        country,
-        created_at,
-        updated_at
+        contact_phone,
+        address
       FROM Suppliers
-      ORDER BY supplier_name ASC
+      ORDER BY name ASC
     `;
 
     const result = await query(suppliersQuery);
