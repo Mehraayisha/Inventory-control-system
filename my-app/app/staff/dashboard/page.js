@@ -62,21 +62,13 @@ export default function AdminDashboard() {
         </div>
         <nav className="flex flex-col p-4 space-y-1 flex-1">
           {/* Active Dashboard Link */}
-          <a href="/admin/products" className="hover:bg-gray-700 p-3 rounded-lg transition duration-200">
+          <a href="/staff/products" className="hover:bg-gray-700 p-3 rounded-lg transition duration-200">
             Products
           </a>
-          <a href="/admin/orders" className="hover:bg-gray-700 p-3 rounded-lg transition duration-200">
-            Orders
-          </a>
-          <a href="/admin/stock" className="hover:bg-gray-700 p-3 rounded-lg transition duration-200">
+          <a href="/staff/stock" className="hover:bg-gray-700 p-3 rounded-lg transition duration-200">
             Stock
           </a>
-          <a href="/admin/suppliers" className="hover:bg-gray-700 p-3 rounded-lg transition duration-200">
-            Suppliers
-          </a>
-          <a href="/admin/categories" className="hover:bg-gray-700 p-3 rounded-lg transition duration-200">
-            Categories
-          </a>
+          
         </nav>
         {/* Placeholder for Logout Button */}
         <div className="p-4 border-t border-gray-700">
