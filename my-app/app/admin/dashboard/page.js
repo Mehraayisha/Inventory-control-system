@@ -2,12 +2,14 @@
 "use client";
 import { Card, CardContent } from "@/components/ui/card";
 import { useState, useEffect } from "react";
+import { useRouter } from 'next/navigation';
 import StockTrendChart from "@/components/StockTrendChart";
 
 // Assuming this component exists (placeholder for a real logout button)
 // import LogoutButton from "@/components/LogoutButton"; 
 
 export default function AdminDashboard() {
+   const router = useRouter();
   const [stats, setStats] = useState({
     totalProducts: 0,
     totalSuppliers: 0,
@@ -39,6 +41,32 @@ export default function AdminDashboard() {
     } finally {
       setLoading(false);
     }
+  };
+
+
+  const handleSignOut = async () => {
+    
+    try {
+      // Clear any local storage or session data
+      localStorage.removeItem('adminToken');
+      localStorage.removeItem('userSession');
+      sessionStorage.clear();
+      
+      // Optional: Call logout API endpoint if you have one
+      // await fetch('/api/auth/logout', { method: 'POST' });
+      
+      // Redirect to login page
+      router.push('/login');
+      
+      // Optional: Show success message
+      console.log('Successfully signed out');
+      
+    } catch (error) {
+      console.error('Error signing out:', error);
+      // Still redirect even if there's an error
+      router.push('/login');
+    }
+  
   };
 
   // Helper component for clean, reusable stat cards
@@ -80,9 +108,15 @@ export default function AdminDashboard() {
         </nav>
         {/* Placeholder for Logout Button */}
         <div className="p-4 border-t border-gray-700">
-            <button className="w-full text-left p-3 rounded-lg bg-red-600 hover:bg-red-700 transition">
-              Sign Out
-            </button>
+            <button 
+            onClick={handleSignOut}
+            className="w-full text-left p-3 rounded-lg bg-red-600 hover:bg-red-700 transition duration-200 flex items-center space-x-2"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            <span>Sign Out</span>
+          </button>
         </div>
       </aside>
 
