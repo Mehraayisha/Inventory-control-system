@@ -92,7 +92,7 @@ const SearchAndFilter = ({
             placeholder="Search by name or ID..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-600"
           />
         </div>
         
@@ -101,12 +101,16 @@ const SearchAndFilter = ({
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-600"
           >
             <option value="">All Categories</option>
-            {categories.map(category => (
-              <option key={category.id} value={category.name}>{category.name}</option>
-            ))}
+            {categories.map(category => {
+              const key = category.category_id ?? category.id ?? category.name;
+              const label = category.category_name ?? category.name ?? 'Unnamed';
+              return (
+                <option key={key} value={label}>{label}</option>
+              );
+            })}
           </select>
         </div>
 
@@ -115,7 +119,7 @@ const SearchAndFilter = ({
           <select
             value={selectedStatus}
             onChange={(e) => setSelectedStatus(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-600"
           >
             <option value="">All Status</option>
             <option value="In Stock">In Stock</option>
@@ -255,6 +259,7 @@ const StockTable = ({ stockData, userRole, onAddStock, onReduceStock, onEditStoc
                           title="Reduce Stock"
                         >
                           ➖ Reduce
+                          
                         </button>
                         <button
                           onClick={() => onEditStock(item)}

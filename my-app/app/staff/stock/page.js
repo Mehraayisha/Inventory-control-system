@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
+import { ReduceStockModal } from '../../admin/stock/modals.js';
 
 // 📦 Dashboard Overview Cards Component (Staff View)
 const StaffDashboardOverview = ({ stockData }) => {
@@ -82,7 +83,7 @@ const StaffSearchAndFilter = ({
             placeholder="Search by name or ID..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-600"
           />
         </div>
         
@@ -91,12 +92,16 @@ const StaffSearchAndFilter = ({
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-600"
           >
             <option value="">All Categories</option>
-            {categories.map(category => (
-              <option key={category.id} value={category.name}>{category.name}</option>
-            ))}
+            {categories.map(category => {
+              const key = category.category_id ?? category.id ?? category.name;
+              const label = category.category_name ?? category.name ?? 'Unnamed';
+              return (
+                <option key={key} value={label}>{label}</option>
+              );
+            })}
           </select>
         </div>
 
@@ -105,7 +110,7 @@ const StaffSearchAndFilter = ({
           <select
             value={selectedStatus}
             onChange={(e) => setSelectedStatus(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-600"
           >
             <option value="">All Status</option>
             <option value="In Stock">In Stock</option>
@@ -119,7 +124,7 @@ const StaffSearchAndFilter = ({
 };
 
 // 📋 Staff Stock Inventory Table Component (Limited Actions)
-const StaffStockTable = ({ stockData, onDeleteStock, sortConfig, setSortConfig }) => {
+const StaffStockTable = ({ stockData, onDeleteStock, onReduceStock, sortConfig, setSortConfig }) => {
   const getStatusColor = (status) => {
     switch (status) {
       case 'In Stock': return 'bg-green-100 text-green-800';
@@ -234,13 +239,20 @@ const StaffStockTable = ({ stockData, onDeleteStock, sortConfig, setSortConfig }
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <div className="flex space-x-2">
-                    {/* Staff can only view details and delete */}
+                    {/* Staff can view details, reduce stock (OUT transaction), and delete */}
                     <button
                       onClick={() => handleViewDetails(item)}
                       className="text-blue-600 hover:text-blue-900 px-2 py-1 bg-blue-100 hover:bg-blue-200 rounded text-xs transition-colors"
                       title="View Product Details"
                     >
                       👁️ View
+                    </button>
+                    <button
+                      onClick={() => onReduceStock(item)}
+                      className="text-amber-600 hover:text-amber-900 px-2 py-1 bg-amber-100 hover:bg-amber-200 rounded text-xs transition-colors"
+                      title="Reduce Stock"
+                    >
+                      ➖ Reduce
                     </button>
                     <button
                       onClick={() => onDeleteStock(item)}
@@ -418,6 +430,7 @@ const StaffStockPage = ({ userName = 'Staff User' }) => {
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
   const [isLoading, setIsLoading] = useState(true);
   const [categories, setCategoriesData] = useState([]);
+  const [reduceStockModal, setReduceStockModal] = useState({ isOpen: false, product: null });
 
   // 🔄 Load stock data from API
   const loadStockData = async () => {
@@ -507,6 +520,39 @@ const StaffStockPage = ({ userName = 'Staff User' }) => {
     return filtered;
   }, [stockData, searchTerm, selectedCategory, selectedStatus, sortConfig]);
 
+  const handleReduceStock = (item) => {
+    setReduceStockModal({ isOpen: true, product: item });
+  };
+
+  const handleReduceStockSubmit = async (data) => {
+    try {
+      const transactionData = {
+        productId: data.productId,
+        transactionType: 'OUT',
+        quantity: data.quantity,
+        notes: data.reason,
+        userId: 2 // placeholder staff user id
+      };
+
+      const response = await fetch('/api/transactions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(transactionData)
+      });
+
+      if (response.ok) {
+        await loadStockData();
+        await loadTransactionData();
+        alert('✅ Stock reduced successfully.');
+      } else {
+        alert('❌ Failed to reduce stock.');
+      }
+    } catch (error) {
+      console.error('Error reducing stock (staff):', error);
+      alert('❌ Error reducing stock.');
+    }
+  };
+
   // Staff can only delete products (with confirmation)
   const handleDeleteStock = (item) => {
     if (confirm(`⚠️ Are you sure you want to delete "${item.name}"?\n\nThis action cannot be undone. As a staff member, you have delete permissions but cannot add or modify stock levels.`)) {
@@ -567,11 +613,18 @@ const StaffStockPage = ({ userName = 'Staff User' }) => {
               <StaffStockTable
                 stockData={filteredAndSortedStockData}
                 onDeleteStock={handleDeleteStock}
+                onReduceStock={handleReduceStock}
                 sortConfig={sortConfig}
                 setSortConfig={setSortConfig}
               />
             </div>
-
+            {/* Reduce Stock Modal */}
+            <ReduceStockModal
+              isOpen={reduceStockModal.isOpen}
+              onClose={() => setReduceStockModal({ isOpen: false, product: null })}
+              product={reduceStockModal.product}
+              onSubmit={handleReduceStockSubmit}
+            />
             {/* Transactions Log */}
             <StaffTransactionsLog transactions={transactions} />
 
