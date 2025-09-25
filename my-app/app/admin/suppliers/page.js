@@ -26,28 +26,11 @@ export default function SuppliersPage() {
     try {
       setLoading(true);
       const res = await fetch("/api/suppliers");
-      
-      if (res.ok) {
-        const data = await res.json();
-        // Ensure data is an array to prevent .map() errors
-        if (Array.isArray(data)) {
-          setSuppliers(data);
-          setError(null);
-        } else {
-          console.error("API returned non-array data:", data);
-          setSuppliers([]);
-          setError("Invalid data format received from server");
-        }
-      } else {
-        const errorData = await res.json().catch(() => ({ error: "Unknown error" }));
-        console.error("API Error:", errorData);
-        setSuppliers([]);
-        setError(`Failed to load suppliers: ${errorData.error || res.statusText}`);
-      }
+      const data = await res.json();
+      setSuppliers(data);
     } catch (err) {
-      console.error("Network error:", err);
-      setSuppliers([]);
-      setError("Failed to load suppliers. Please check your connection.");
+      setError("Failed to load suppliers.");
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -173,24 +156,10 @@ export default function SuppliersPage() {
         <Card className="bg-white shadow-md">
           <CardContent className="p-6">
             <h2 className="text-xl font-semibold mb-4 text-indigo-700">Suppliers List</h2>
-            {error ? (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-                <p className="font-semibold">⚠️ Error loading suppliers:</p>
-                <p>{error}</p>
-                <button 
-                  onClick={fetchSuppliers}
-                  className="mt-2 bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700"
-                >
-                  🔄 Retry
-                </button>
-              </div>
-            ) : loading ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-                <span className="ml-3 text-lg text-gray-600">Loading suppliers...</span>
-              </div>
+            {loading ? (
+              <p>Loading...</p>
             ) : suppliers.length === 0 ? (
-              <p className="text-gray-500 text-center py-8">No suppliers found.</p>
+              <p>No suppliers found.</p>
             ) : (
               <table className="w-full text-left border border-gray-200 rounded-lg overflow-hidden">
                 <thead className="bg-indigo-100 text-indigo-800">
