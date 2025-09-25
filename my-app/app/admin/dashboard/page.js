@@ -3,7 +3,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { useState, useEffect } from "react";
 import StockTrendChart from "@/components/StockTrendChart";
-import OrderTrendChart from "@/components/OrderTrendChart";
+
 // Assuming this component exists (placeholder for a real logout button)
 // import LogoutButton from "@/components/LogoutButton"; 
 
@@ -62,9 +62,6 @@ export default function AdminDashboard() {
         </div>
         <nav className="flex flex-col p-4 space-y-1 flex-1">
           {/* Active Dashboard Link */}
-          <a href="/admin/dashboard" className="bg-blue-600 p-3 rounded-lg font-semibold transition duration-200">
-            Dashboard
-          </a>
           <a href="/admin/products" className="hover:bg-gray-700 p-3 rounded-lg transition duration-200">
             Products
           </a>
@@ -74,15 +71,7 @@ export default function AdminDashboard() {
           <a href="/admin/stock" className="hover:bg-gray-700 p-3 rounded-lg transition duration-200">
             Stock
           </a>
-          <a href="/admin/reports" className="hover:bg-gray-700 p-3 rounded-lg transition duration-200">
-            Reports
-          </a>
-          <a href="/admin/users" className="hover:bg-gray-700 p-3 rounded-lg transition duration-200">
-            Users
-          </a>
-          <a href="/admin/settings" className="hover:bg-gray-700 p-3 rounded-lg transition duration-200">
-            Settings
-          </a>
+        
         </nav>
         {/* Placeholder for Logout Button */}
         <div className="p-4 border-t border-gray-700">
@@ -138,43 +127,23 @@ export default function AdminDashboard() {
         </div>
 
         {/* Charts and Recent Activity */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+     
           
           {/* Charts Placeholder */}
           <Card className="bg-white shadow-lg lg:col-span-2 rounded-xl">
-            <CardContent className="p-6">
+            <CardContent className="p-2">
               <h2 className="font-bold text-xl mb-4 text-blue-700 border-b pb-2">📊 Stock and Order Trends</h2>
               {/* Combined chart placeholders */}
-              <div className="h-60 flex flex-col md:flex-row items-center justify-around text-gray-400 space-y-4 md:space-y-0 md:space-x-4">
-                <div className="w-full md:w-1/2 h-full border border-dashed rounded-lg flex items-center justify-center bg-gray-50"><StockTrendChart /></div>
-                <div className="w-full md:w-1/2 h-full border border-dashed rounded-lg flex items-center justify-center bg-gray-50"><OrderTrendChart /></div>
+              <div className="h-150 flex flex-col md:flex-row items-center justify-around text-gray-400 space-y-4 md:space-y-0 mx-auto">
+               <StockTrendChart />
               </div>
             </CardContent>
           </Card>
           
           {/* Recent Products List */}
-          <Card className="bg-white shadow-lg rounded-xl">
-            <CardContent className="p-6">
-              <h2 className="font-bold text-xl mb-4 text-blue-700 border-b pb-2">🕒 Recent Products</h2>
-              <ul className="space-y-3">
-                {loading ? (
-                  <p className="text-gray-500">Loading recent products...</p>
-                ) : stats.recentProducts.length === 0 ? (
-                  <p className="text-gray-500">No recent products found.</p>
-                ) : (
-                  stats.recentProducts.map((product) => (
-                    <li key={product.product_id} className="flex justify-between items-center text-sm p-3 bg-gray-50 rounded-lg border-l-4 border-blue-300 hover:bg-gray-100 transition">
-                      <span className="font-medium text-gray-800 truncate">{product.name}</span>
-                      <span className="text-gray-600 font-semibold ml-2">
-                          Qty: {product.stock_quantity}
-                      </span>
-                    </li>
-                  ))
-                )}
-              </ul>
-            </CardContent>
-          </Card>
-        </div>
+          
+            
+      
       </main>
     </div>
   );

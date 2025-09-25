@@ -5,48 +5,77 @@ export async function GET() {
   try {
     console.log('🔄 Fetching stock trends...');
 
-    // Get stock trends for the last 30 days
-    const stockTrendsResult = await query(`
+    // Get current stock overview (since we don't have created_at in Products table)
+    const stockOverviewResult = await query(`
       SELECT 
-        DATE(created_at) as date,
+        COUNT(*) as total_products,
         SUM(stock_quantity) as total_stock,
-        COUNT(*) as products_count,
-        AVG(stock_quantity) as avg_stock_per_product
-      FROM Products 
-      WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-      GROUP BY DATE(created_at)
-      ORDER BY date DESC
-      LIMIT 30
+        AVG(stock_quantity) as avg_stock_per_product,
+        COUNT(CASE WHEN stock_quantity <= 10 THEN 1 END) as low_stock_count,
+        COUNT(CASE WHEN stock_quantity = 0 THEN 1 END) as out_of_stock_count
+      FROM Products
     `);
 
-    // Get low stock trend
-    const lowStockTrendResult = await query(`
-      SELECT 
-        DATE(created_at) as date,
-        COUNT(*) as low_stock_count
-      FROM Products 
-      WHERE stock_quantity <= 10 
-        AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-      GROUP BY DATE(created_at)
-      ORDER BY date DESC
-      LIMIT 30
+    // Get stock levels distribution
+    const stockDistributionResult = await query(`
+       SELECT 
+        CASE 
+          WHEN stock_quantity = 0 THEN 'Out of Stock'
+          WHEN stock_quantity <= 10 THEN 'Low Stock'
+          WHEN stock_quantity <= 50 THEN 'Medium Stock'
+          ELSE 'High Stock'
+        END as stock_level,
+        COUNT(*) as product_count,
+        SUM(stock_quantity) as total_quantity
+      FROM Products
+      GROUP BY 
+        CASE 
+          WHEN stock_quantity = 0 THEN 'Out of Stock'
+          WHEN stock_quantity <= 10 THEN 'Low Stock'
+          WHEN stock_quantity <= 50 THEN 'Medium Stock'
+          ELSE 'High Stock'
+        END
+      ORDER BY 
+        CASE 
+          WHEN (CASE 
+            WHEN stock_quantity = 0 THEN 'Out of Stock'
+            WHEN stock_quantity <= 10 THEN 'Low Stock'
+            WHEN stock_quantity <= 50 THEN 'Medium Stock'
+            ELSE 'High Stock'
+          END) = 'Out of Stock' THEN 1
+          WHEN (CASE 
+            WHEN stock_quantity = 0 THEN 'Out of Stock'
+            WHEN stock_quantity <= 10 THEN 'Low Stock'
+            WHEN stock_quantity <= 50 THEN 'Medium Stock'
+            ELSE 'High Stock'
+          END) = 'Low Stock' THEN 2
+          WHEN (CASE 
+            WHEN stock_quantity = 0 THEN 'Out of Stock'
+            WHEN stock_quantity <= 10 THEN 'Low Stock'
+            WHEN stock_quantity <= 50 THEN 'Medium Stock'
+            ELSE 'High Stock'
+          END) = 'Medium Stock' THEN 3
+          ELSE 4
+        END
+    
     `);
 
     // Get stock by category
     const stockByCategoryResult = await query(`
       SELECT 
-        c.name as category_name,
+        c.category_name as category_name,
         SUM(p.stock_quantity) as total_stock,
-        COUNT(p.product_id) as product_count
+        COUNT(p.product_id) as product_count,
+        AVG(p.stock_quantity) as avg_stock_per_product
       FROM Products p
       LEFT JOIN Categories c ON p.category_id = c.category_id
-      GROUP BY c.category_id, c.name
+      GROUP BY c.category_id, c.category_name
       ORDER BY total_stock DESC
     `);
 
     const stockTrends = {
-      dailyTrends: stockTrendsResult.rows || [],
-      lowStockTrends: lowStockTrendResult.rows || [],
+      overview: stockOverviewResult.rows?.[0] || {},
+      stockDistribution: stockDistributionResult.rows || [],
       stockByCategory: stockByCategoryResult.rows || []
     };
 
@@ -63,8 +92,8 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       data: {
-        dailyTrends: [],
-        lowStockTrends: [],
+        overview: {},
+        stockDistribution: [],
         stockByCategory: []
       },
       error: 'Database connection failed'
