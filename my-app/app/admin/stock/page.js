@@ -596,9 +596,127 @@ const StockPage = ({ userRole = 'admin', userName = 'Demo User' }) => {
     }
   };
 
+  // 📊 Export Report Functions
+  const generateCSVContent = (data, reportType = 'stock') => {
+    if (data.length === 0) return '';
+
+    const headers = Object.keys(data[0]);
+    const csvContent = [
+      // Add report header
+      `# ${reportType.toUpperCase()} REPORT`,
+      `# Generated on: ${new Date().toLocaleString()}`,
+      `# Total Records: ${data.length}`,
+      '', // Empty line
+      // CSV Headers
+      headers.join(','),
+      // CSV Data
+      ...data.map(row => 
+        headers.map(header => {
+          const value = row[header] || '';
+          return value.toString().includes(',') || value.toString().includes('"') 
+            ? `"${value.toString().replace(/"/g, '""')}"` 
+            : value;
+        }).join(',')
+      )
+    ].join('\n');
+
+    return csvContent;
+  };
+
+  const downloadFile = (content, filename, type = 'text/csv') => {
+    const BOM = '\uFEFF'; // Excel UTF-8 BOM
+    const blob = new Blob([BOM + content], { type: `${type};charset=utf-8;` });
+    const link = document.createElement('a');
+    
+    if (link.download !== undefined) {
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', filename);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      return true;
+    }
+    return false;
+  };
+
   const handleExportReport = () => {
-    alert('Exporting stock report...');
-    // Implement export functionality
+    try {
+      // Calculate summary statistics
+      const totalProducts = filteredAndSortedStockData.length;
+      const totalValue = filteredAndSortedStockData.reduce((sum, item) => sum + (item.currentStock * item.unitPrice), 0);
+      const lowStockItems = filteredAndSortedStockData.filter(item => item.currentStock < item.reorderLevel && item.currentStock > 0).length;
+      const outOfStockItems = filteredAndSortedStockData.filter(item => item.currentStock === 0).length;
+
+      // Prepare comprehensive export data
+      const exportData = filteredAndSortedStockData.map(item => ({
+        'Product ID': item.id,
+        'Product Name': item.name,
+        'Category': item.category,
+        'Current Stock': item.currentStock,
+        'Unit Price': item.unitPrice.toFixed(2),
+        'Stock Value': (item.currentStock * item.unitPrice).toFixed(2),
+        'Reorder Level': item.reorderLevel,
+        'Stock Status': item.currentStock === 0 ? 'Out of Stock' : 
+                       item.currentStock < item.reorderLevel ? 'Low Stock' : 'In Stock',
+        'Stock Health': item.currentStock === 0 ? 'Critical' :
+                       item.currentStock < item.reorderLevel ? 'Warning' : 'Good',
+        'Supplier': item.supplier || 'N/A',
+        'Location': item.location || 'N/A',
+        'Last Updated': new Date(item.lastUpdated || Date.now()).toLocaleDateString(),
+        'Days Since Update': Math.floor((Date.now() - new Date(item.lastUpdated || Date.now()).getTime()) / (1000 * 60 * 60 * 24))
+      }));
+
+      // Add summary data at the beginning
+      const summaryData = [
+        { 'Metric': 'Total Products', 'Value': totalProducts },
+        { 'Metric': 'Total Stock Value', 'Value': `$${totalValue.toFixed(2)}` },
+        { 'Metric': 'Low Stock Items', 'Value': lowStockItems },
+        { 'Metric': 'Out of Stock Items', 'Value': outOfStockItems },
+        { 'Metric': 'Stock Health Score', 'Value': `${Math.round((totalProducts - outOfStockItems - lowStockItems) / totalProducts * 100)}%` }
+      ];
+
+      // Generate CSV with summary
+      const summaryCSV = generateCSVContent(summaryData, 'Stock Summary');
+      const detailsCSV = generateCSVContent(exportData, 'Stock Details');
+      
+      const fullCSV = [
+        summaryCSV,
+        '\n\n# DETAILED STOCK REPORT\n',
+        detailsCSV
+      ].join('\n');
+
+      // Generate filename with timestamp
+      const timestamp = new Date().toISOString().slice(0, 19).replace(/[T:]/g, '-');
+      const filename = `inventory-stock-report-${timestamp}.csv`;
+
+      // Download file
+      if (downloadFile(fullCSV, filename)) {
+        // Show detailed success message
+        const message = [
+          '✅ Stock Report Exported Successfully!',
+          `📄 File: ${filename}`,
+          `📊 Records: ${exportData.length} products`,
+          `💰 Total Value: $${totalValue.toFixed(2)}`,
+          `⚠️  Alerts: ${lowStockItems} low stock, ${outOfStockItems} out of stock`,
+          '',
+          'The report includes:',
+          '• Product inventory details',
+          '• Stock valuation',
+          '• Reorder recommendations',
+          '• Stock health analysis'
+        ].join('\n');
+        
+        alert(message);
+      } else {
+        throw new Error('Download not supported in this browser');
+      }
+    } catch (error) {
+      console.error('Export error:', error);
+      alert('❌ Failed to export report. Please try again.\n\nError: ' + error.message);
+    }
   };
 
   // Modal submit handlers
@@ -699,12 +817,60 @@ const StockPage = ({ userRole = 'admin', userName = 'Demo User' }) => {
             <p className="text-gray-600">Welcome, {userName} ({userRole})</p>
           </div>
           {userRole === 'admin' && (
-            <div className="flex space-x-4">
+            <div className="flex space-x-3">
               <button
                 onClick={handleExportReport}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 shadow-md"
+                title="Export comprehensive stock report with analytics"
               >
-                📊 Export Report
+                <span>📊</span>
+                <span>Export Full Report</span>
+                <span className="text-xs bg-blue-500 px-2 py-1 rounded-full ml-1">
+                  {filteredAndSortedStockData.length} items
+                </span>
+              </button>
+              
+              <button
+                onClick={() => {
+                  const lowStockItems = filteredAndSortedStockData.filter(item => 
+                    item.currentStock < item.reorderLevel || item.currentStock === 0
+                  );
+                  
+                  if (lowStockItems.length === 0) {
+                    alert('✅ No low stock or out of stock items found!');
+                    return;
+                  }
+                  
+                  const exportData = lowStockItems.map(item => ({
+                    'Product ID': item.id,
+                    'Product Name': item.name,
+                    'Category': item.category,
+                    'Current Stock': item.currentStock,
+                    'Reorder Level': item.reorderLevel,
+                    'Shortage': item.reorderLevel - item.currentStock,
+                    'Unit Price': item.unitPrice.toFixed(2),
+                    'Reorder Cost': ((item.reorderLevel - item.currentStock) * item.unitPrice).toFixed(2),
+                    'Status': item.currentStock === 0 ? 'OUT OF STOCK' : 'LOW STOCK',
+                    'Priority': item.currentStock === 0 ? 'URGENT' : 'HIGH',
+                    'Supplier': item.supplier || 'N/A'
+                  }));
+
+                  const csvContent = generateCSVContent(exportData, 'Low Stock Alert');
+                  const timestamp = new Date().toISOString().slice(0, 19).replace(/[T:]/g, '-');
+                  const filename = `low-stock-alert-${timestamp}.csv`;
+                  
+                  if (downloadFile(csvContent, filename)) {
+                    alert(`🚨 Low Stock Report Exported!\n📄 File: ${filename}\n⚠️  ${lowStockItems.length} items need attention`);
+                  }
+                }}
+                className="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 shadow-md"
+                title="Export only low stock and out of stock items"
+              >
+                <span>⚠️</span>
+                <span>Low Stock</span>
+                <span className="text-xs bg-amber-500 px-2 py-1 rounded-full ml-1">
+                  {filteredAndSortedStockData.filter(item => item.currentStock < item.reorderLevel || item.currentStock === 0).length}
+                </span>
               </button>
             </div>
           )}
